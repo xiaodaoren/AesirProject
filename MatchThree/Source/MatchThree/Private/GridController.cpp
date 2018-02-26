@@ -20,6 +20,11 @@ AGridController::AGridController()
 void AGridController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bSelectOnTick == true)
+	{
+		Select();
+		HighlightSelected();
+	}
 }
 
 // Called when the game starts or when spawned
@@ -95,98 +100,102 @@ void AGridController::BeginPlay()
 		auto InputComponent = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->FindComponentByClass<UInputComponent>();
 		if (InputComponent)
 		{
-			InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::Select); 
+			InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::SetTickTrue); 
+			InputComponent->BindAction("SelectBlock", IE_Released, this, &AGridController::OnRelease);
 		}
 		
-		if (SelectedBlocks.Num() != 0)
-		{
-			DestroyBlocks(SelectedBlocks);
-			//drop blocks
-			for (int i = 0; i < (SizeX + 1) * (SizeY + 1); i++)
-			{
-				if (!BlockMap.Contains(i))
-				{
-					bool bDrop = false;
-					for (int j = i + 1; j % (SizeY + 1) != 0; j++)
-					{
-						if (BlockMap.Contains(j))
-						{
-							auto BlockToDrop = BlockMap[j];
-							BlockMap.Remove(j);
-							BlockMap.Add(i, BlockToDrop);
-							bDrop = true;
-						}
-					}
-					if (!bDrop)
-					{
-						ABlock* BlockInst = nullptr;
-						FVector Position = PositionFromIndex(i);
-						int32 CounterX = (int32)Position.X;
-						int32 CounterY = (int32)Position.Z;
-						FVector BlockPos;
-						if (CounterX % 2 == 0) bOddNum = false;
-						else bOddNum = true;
-						if (bOddNum)
-						{
-							BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
-						}
-						else
-						{
-							BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40));
-						}
-
-						FTransform BlockTransform;
-						BlockTransform.SetLocation(BlockPos);
-						int32 Identifier = SetIdentifier();
-						switch (Identifier)
-						{
-						case 0:
-							BlockInst = GetWorld()->SpawnActor<ABlock>(BlueBlockBP, BlockTransform, SpawnParams);
-							BlockInst->Identifier = Identifier;
-							break;
-						case 1:
-							BlockInst = GetWorld()->SpawnActor<ABlock>(GreenBlockBP, BlockTransform, SpawnParams);
-							BlockInst->Identifier = Identifier;
-							break;
-						case 2:
-							BlockInst = GetWorld()->SpawnActor<ABlock>(RedBlockBP, BlockTransform, SpawnParams);
-							BlockInst->Identifier = Identifier;
-							break;
-						case 3:
-							BlockInst = GetWorld()->SpawnActor<ABlock>(YellowBlockBP, BlockTransform, SpawnParams);
-							BlockInst->Identifier = Identifier;
-							break;
-						}
-						
-						BlockMap.Add(i, BlockInst);
-					}
-				}
-			}
-
-			//set blocks new position
-			for (auto& Block : BlockMap)
-			{
-				FVector Position = PositionFromIndex(Block.Key);
-				int32 CounterX = (int32)Position.X;
-				int32 CounterY = (int32)Position.Z;
-				FVector BlockPos;
-				if (CounterX % 2 == 0) bOddNum = false;
-				else bOddNum = true;
-				if (bOddNum)
-				{
-					BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
-					Block.Value->SetActorLocation(BlockPos);
-				}
-				else
-				{
-					BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40));
-					Block.Value->SetActorLocation(BlockPos);
-				}
-			}
-		}
+		DropAndRefill();
 
 	}
 	else UE_LOG(LogTemp, Error, TEXT("Blueprint Reference missing in GridController_BP > Actor Spawning"))
+}
+
+void AGridController::DropAndRefill()
+{
+		//drop blocks
+		for (int i = 0; i < (SizeX + 1) * (SizeY + 1); i++)
+		{
+			if (!BlockMap.Contains(i))
+			{
+				bool bDrop = false;
+				for (int j = i + 1; j % (SizeY + 1) != 0; j++)
+				{
+					if (BlockMap.Contains(j))
+					{
+						auto BlockToDrop = BlockMap[j];
+						BlockMap.Remove(j);
+						BlockMap.Add(i, BlockToDrop);
+						bDrop = true;
+						BlockMap.Add(i, BlockToDrop);
+						j = -1;
+					}
+				}
+				if (!bDrop)
+				{
+					ABlock* BlockInst = nullptr;
+					FVector Position = PositionFromIndex(i);
+					int32 CounterX = (int32)Position.X;
+					int32 CounterY = (int32)Position.Z;
+					FVector BlockPos;
+					if (CounterX % 2 == 0) bOddNum = false;
+					else bOddNum = true;
+					if (bOddNum)
+					{
+						BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
+					}
+					else
+					{
+						BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40));
+					}
+
+					FTransform BlockTransform;
+					BlockTransform.SetLocation(BlockPos);
+					int32 Identifier = SetIdentifier();
+					switch (Identifier)
+					{
+					case 0:
+						BlockInst = GetWorld()->SpawnActor<ABlock>(BlueBlockBP, BlockTransform, SpawnParams);
+						BlockInst->Identifier = Identifier;
+						break;
+					case 1:
+						BlockInst = GetWorld()->SpawnActor<ABlock>(GreenBlockBP, BlockTransform, SpawnParams);
+						BlockInst->Identifier = Identifier;
+						break;
+					case 2:
+						BlockInst = GetWorld()->SpawnActor<ABlock>(RedBlockBP, BlockTransform, SpawnParams);
+						BlockInst->Identifier = Identifier;
+						break;
+					case 3:
+						BlockInst = GetWorld()->SpawnActor<ABlock>(YellowBlockBP, BlockTransform, SpawnParams);
+						BlockInst->Identifier = Identifier;
+						break;
+					}
+
+					BlockMap.Add(i, BlockInst);
+				}
+			}
+		}
+
+		//set blocks new position
+		for (auto& Block : BlockMap)
+		{
+			FVector Position = PositionFromIndex(Block.Key);
+			int32 CounterX = (int32)Position.X;
+			int32 CounterY = (int32)Position.Z;
+			FVector BlockPos;
+			if (CounterX % 2 == 0) bOddNum = false;
+			else bOddNum = true;
+			if (bOddNum)
+			{
+				BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
+				Block.Value->SetActorLocation(BlockPos);
+			}
+			else
+			{
+				BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40));
+				Block.Value->SetActorLocation(BlockPos);
+			}
+		}
 }
 
 
@@ -194,6 +203,17 @@ int32 AGridController::SetIdentifier()
 {
 	int32 Identifier = FMath::RandRange(0, 3);
 	return Identifier;
+}
+
+void AGridController::SetTickTrue()
+{
+	bSelectOnTick = true;
+}
+
+void AGridController::OnRelease()
+{
+	DestroyBlocks(SelectedBlocks);
+	bSelectOnTick = false;
 }
 
 void AGridController::Select()
@@ -209,20 +229,54 @@ void AGridController::Select()
 	ABlock* BlockInst = nullptr;
 	const int32* BlockIndex = nullptr;
 	//gets Block that was hit 
-	if (Cast<ABlock>(Hit.GetActor())) { BlockInst = Cast<ABlock>(Hit.GetActor()); 	UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *BlockInst->GetName()) }
-	//finds corresponding index in BlockMap
-	if (BlockInst) BlockIndex = BlockMap.FindKey(BlockInst); 
-	// adds index to Selected Blocks array
-	if (BlockIndex) SelectedBlocks.Add(BlockIndex[0]); 
-	for (auto& Elem : SelectedBlocks)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Selected: %d"), Elem)
+	if (Cast<ABlock>(Hit.GetActor())) 
+	{ 
+		BlockInst = Cast<ABlock>(Hit.GetActor()); 	
+
+		//finds corresponding index in BlockMap
+		BlockIndex = BlockMap.FindKey(BlockInst); 
+		int32 LastElem = 0;
+		if (SelectedBlocks.Num() == 0)
+		{
+			SelectedBlocks.Add(BlockIndex[0]);
+			UE_LOG(LogTemp, Warning, TEXT("Hit: %d"), BlockIndex[0])
+		}
+		else
+		{
+			if (SelectedBlocks.IsValidIndex(SelectedBlocks.Num() - 1))
+			{
+				LastElem = SelectedBlocks[SelectedBlocks.Num() - 1];
+			}
+			// adds index to Selected Blocks array
+			if (LastElem != *BlockIndex)
+			{
+				if (!SelectedBlocks.Contains(BlockIndex[0]))
+				{
+					//if first and new element have the same identifier (color)
+					if (BlockMap[SelectedBlocks[0]]->Identifier == BlockMap[BlockIndex[0]]->Identifier)
+					{
+						SelectedBlocks.Add(BlockIndex[0]);
+						UE_LOG(LogTemp, Warning, TEXT("Hit: %d"), BlockIndex[0])
+					}
+					else AbortTry();
+				}
+				else AbortTry();
+			}
+		}
 	}
+	else OnRelease();
 }
 
 void AGridController::DebugLog()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Called"))
+}
+
+void AGridController::AbortTry()
+{
+	//TODO light up
+	SelectedBlocks.Empty();
+	bSelectOnTick = false;
 }
 
 bool AGridController::bIsSameColor(TArray<int32> SelectedBlocks)
@@ -231,10 +285,8 @@ bool AGridController::bIsSameColor(TArray<int32> SelectedBlocks)
 	{
 		auto FirstBlock = BlockMap[SelectedBlocks[0]];
 		auto FirstBlockIdent = FirstBlock->Identifier;
-		UE_LOG(LogTemp, Warning, TEXT("first block: %d"), FirstBlockIdent)
 		for (auto& Index : SelectedBlocks)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("other block: %d"), BlockMap[Index]->Identifier)
 			if (BlockMap[Index]->Identifier != FirstBlockIdent) return false;
 		}
 		return true;
@@ -246,19 +298,23 @@ void AGridController::DestroyBlocks(TArray<int32> &Selection)
 {
 	if (Selection.Num() > 2)
 	{
-		if (bIsSameColor(Selection))
+		for (auto& Index : Selection)
 		{
-			for (auto& Index : Selection)
+			if (BlockMap.Contains(Index))
 			{
-				if (BlockMap.Contains(Index))
-				{
-					auto BlockToDestroy = BlockMap[Index];
-					BlockMap.Remove(Index);
-					BlockToDestroy->Destroy();
-				}
+				auto BlockToDestroy = BlockMap[Index];
+				BlockMap.Remove(Index);
+				BlockToDestroy->Destroy();
 			}
 		}
+		for (auto& SelectedBlock : SelectedBlocks)
+		{
+			BlockMap.Remove(SelectedBlock); 
+		}
 	}
+	
+	SelectedBlocks.Empty();
+	DropAndRefill();
 }
 
 FVector AGridController::PositionFromIndex(int32 Index)
@@ -266,4 +322,16 @@ FVector AGridController::PositionFromIndex(int32 Index)
 	int32 PosX = Index / (SizeY + 1);
 	int32 PosY = Index % (SizeY + 1);
 	return FVector(PosX, 0.f, PosY);
+}
+
+void AGridController::HighlightSelected()
+{
+	if (SelectedBlocks.IsValidIndex(1))
+	{
+		for (int i = 0; i < SelectedBlocks.Num()-1; i++)
+		{
+			DrawDebugLine(GetWorld(), BlockMap[SelectedBlocks[i]]->GetActorLocation(), BlockMap[SelectedBlocks[i+1]]->GetActorLocation(), FColor(255, 0, 0), false, -1.f, 0, 4.f);
+			DebugLog();
+		}
+	}
 }

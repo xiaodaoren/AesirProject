@@ -21,9 +21,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void DropAndRefill();
+
 	void DestroyBlocks(TArray<int32> &Selection);
 
 	FVector PositionFromIndex(int32 Index);
+
+	void HighlightSelected();
 
 public:	
 	// Called every frame
@@ -53,7 +57,13 @@ private:
 	int32 SetIdentifier();
 
 	TArray<int32> SelectedBlocks;
+
+	void SetTickTrue();
+	void OnRelease();
 	void Select();
 	void DebugLog();
+	void AbortTry();
+
 	bool bIsSameColor(TArray<int32> SelectedBlocks);
+	bool bSelectOnTick = false;
 };
