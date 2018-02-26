@@ -21,7 +21,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	TArray<int32> FindBlocksToDestroy();
+	void DestroyBlocks(TArray<int32> &Selection);
+
+	FVector PositionFromIndex(int32 Index);
 
 public:	
 	// Called every frame
@@ -46,12 +48,12 @@ private:
 	FActorSpawnParameters SpawnParams;
 	bool bOddNum;
 
-	FVector HexPos;
-	FVector BlockPos;
-
 	TMap<int32, ABlock*> BlockMap;
 
 	int32 SetIdentifier();
 
-	TArray<int32> Select();
+	TArray<int32> SelectedBlocks;
+	void Select();
+	void DebugLog();
+	bool bIsSameColor(TArray<int32> SelectedBlocks);
 };

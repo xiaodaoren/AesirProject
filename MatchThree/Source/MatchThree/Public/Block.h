@@ -23,6 +23,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditDefaultsOnly)
+		int32 Identifier;
+
 	int32 Index;
 	
 	TArray<int32> CheckNeighbors();
