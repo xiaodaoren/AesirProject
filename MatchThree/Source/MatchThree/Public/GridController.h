@@ -31,12 +31,14 @@ protected:
 	//drops blocks into empty spaces, or spawns new ones if none drop
 	void DropAndRefill();
 
-	void DestroyBlocks(TArray<int32> &Selection);
+	void DestroyBlocks();
 
 	//gets block position in 2d hexgrid from its index
 	FVector2D PositionFromIndex(int32 Index);
 
 	void HighlightSelected();
+
+	void AddPoints();
 
 public:	
 	// Called every frame
@@ -54,22 +56,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "ActorSpawning")
 		TSubclassOf<ABlock> YellowBlockBP;
 	UPROPERTY(EditAnywhere)
-		int32 SizeX = 7;
+		int32 SizeX;
 	UPROPERTY(EditAnywhere)
-		int32 SizeY = 6;
+		int32 SizeY;
 	
 	FActorSpawnParameters SpawnParams;
 	
 	TMap<int32, ABlock*> BlockMap;
 	TArray<int32> SelectedBlocks;
 
+	bool bOddNum;
+	bool bSelectOnTick;
+
+	int32 Points;
+
 	//Identifier represents color
 	int32 RandIdentifier();
 
-	bool bOddNum;
-	bool bSelectOnTick = false;
-
-	void SetTickTrue();
+	void OnPress();
 	void OnRelease();
 	void Select();
 	void DebugLog();

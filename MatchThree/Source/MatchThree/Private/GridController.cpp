@@ -14,6 +14,11 @@ AGridController::AGridController()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	SizeX = 7;
+	SizeY = 6;
+
+	bSelectOnTick = false;
+	Points = 0;
 }
 
 // Called every frame
@@ -122,7 +127,7 @@ void AGridController::BindInput()
 	auto InputComponent = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->FindComponentByClass<UInputComponent>();
 	if (InputComponent)
 	{
-		InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::SetTickTrue);
+		InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::OnPress);
 		InputComponent->BindAction("SelectBlock", IE_Released, this, &AGridController::OnRelease);
 	}
 }
@@ -235,15 +240,17 @@ int32 AGridController::RandIdentifier()
 	return Identifier;
 }
 
-void AGridController::SetTickTrue()
+void AGridController::OnPress()
 {
 	bSelectOnTick = true;
 }
 
 void AGridController::OnRelease()
 {
-	DestroyBlocks(SelectedBlocks);
+	AddPoints();
+	DestroyBlocks();
 	bSelectOnTick = false;
+	DropAndRefill();
 }
 
 void AGridController::Select()
@@ -315,11 +322,11 @@ void AGridController::AbortTry()
 	bSelectOnTick = false;
 }
 
-void AGridController::DestroyBlocks(TArray<int32> &Selection)
+void AGridController::DestroyBlocks()
 {
-	if (Selection.Num() > 2)
+	if (SelectedBlocks.Num() > 2)
 	{
-		for (auto& Index : Selection)
+		for (auto& Index : SelectedBlocks)
 		{
 			if (BlockMap.Contains(Index))
 			{
@@ -333,9 +340,7 @@ void AGridController::DestroyBlocks(TArray<int32> &Selection)
 			BlockMap.Remove(SelectedBlock); 
 		}
 	}
-	
 	SelectedBlocks.Empty();
-	DropAndRefill();
 }
 
 FVector2D AGridController::PositionFromIndex(int32 Index)
@@ -353,6 +358,18 @@ void AGridController::HighlightSelected()
 		{
 			DrawDebugLine(GetWorld(), BlockMap[SelectedBlocks[i]]->GetActorLocation(), BlockMap[SelectedBlocks[i+1]]->GetActorLocation(), FColor(255, 0, 0), false, -1.f, 0, 4.f);
 		}
+	}
+}
+
+void AGridController::AddPoints()
+{
+	if (SelectedBlocks.Num() > 2)
+	{
+		for (int i = 0; i < SelectedBlocks.Num(); i++)
+		{
+			Points = Points + i;
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Points: %d"), Points)
 	}
 }
 
