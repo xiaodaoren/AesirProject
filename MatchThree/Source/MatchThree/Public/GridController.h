@@ -21,10 +21,19 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	//Spawns hexagons and initial blocks according to selected grid size in blueprint
+	void InitGame();
+
+	void SuppressCamMovement();
+
+	void BindInput();
+
+	//drops blocks into empty spaces, or spawns new ones if none drop
 	void DropAndRefill();
 
 	void DestroyBlocks(TArray<int32> &Selection);
 
+	//gets block position in 2d hexgrid from its index
 	FVector PositionFromIndex(int32 Index);
 
 	void HighlightSelected();
@@ -50,13 +59,14 @@ private:
 		int32 SizeY = 6;
 	
 	FActorSpawnParameters SpawnParams;
-	bool bOddNum;
-
+	
 	TMap<int32, ABlock*> BlockMap;
+	TArray<int32> SelectedBlocks;
 
 	int32 SetIdentifier();
 
-	TArray<int32> SelectedBlocks;
+	bool bOddNum;
+	bool bSelectOnTick = false;
 
 	void SetTickTrue();
 	void OnRelease();
@@ -64,6 +74,5 @@ private:
 	void DebugLog();
 	void AbortTry();
 
-	bool bIsSameColor(TArray<int32> SelectedBlocks);
-	bool bSelectOnTick = false;
+	//bool bIsSameColor(TArray<int32> SelectedBlocks);
 };

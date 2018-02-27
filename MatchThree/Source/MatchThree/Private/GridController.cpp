@@ -31,8 +31,16 @@ void AGridController::Tick(float DeltaTime)
 void AGridController::BeginPlay()
 {
 	Super::BeginPlay();
-	auto PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	PlayerController->SetCinematicMode(true, true, true); //Prevents camera from moving with mouse movement
+
+	BindInput();
+
+	SuppressCamMovement();
+
+	InitGame(); 
+}
+
+void AGridController::InitGame()
+{
 	if (HexBP && BlueBlockBP && RedBlockBP && GreenBlockBP && YellowBlockBP)
 	{
 		int32 Index = 0;
@@ -60,9 +68,8 @@ void AGridController::BeginPlay()
 				FTransform HexTransform;
 				HexTransform.SetLocation(HexPos);
 				GetWorld()->SpawnActor<AActor>(HexBP, HexTransform, SpawnParams);
-				
+
 				//Spawn Blocks
-				
 				ABlock *BlockInst = nullptr;
 				FTransform BlockTransform;
 				BlockTransform.SetLocation(BlockPos);
@@ -95,19 +102,25 @@ void AGridController::BeginPlay()
 				}
 			}
 		}
-
-		//GetInput, get selected blocks
-		auto InputComponent = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->FindComponentByClass<UInputComponent>();
-		if (InputComponent)
-		{
-			InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::SetTickTrue); 
-			InputComponent->BindAction("SelectBlock", IE_Released, this, &AGridController::OnRelease);
-		}
-		
-		DropAndRefill();
-
 	}
+
 	else UE_LOG(LogTemp, Error, TEXT("Blueprint Reference missing in GridController_BP > Actor Spawning"))
+}
+
+void AGridController::SuppressCamMovement()
+{
+	auto PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	PlayerController->SetCinematicMode(true, true, true); //Prevents camera from moving with mouse movement
+}
+
+void AGridController::BindInput()
+{
+	auto InputComponent = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->FindComponentByClass<UInputComponent>();
+	if (InputComponent)
+	{
+		InputComponent->BindAction("SelectBlock", IE_Pressed, this, &AGridController::SetTickTrue);
+		InputComponent->BindAction("SelectBlock", IE_Released, this, &AGridController::OnRelease);
+	}
 }
 
 void AGridController::DropAndRefill()
@@ -276,21 +289,6 @@ void AGridController::AbortTry()
 	bSelectOnTick = false;
 }
 
-bool AGridController::bIsSameColor(TArray<int32> SelectedBlocks)
-{
-	if (SelectedBlocks.IsValidIndex(0))
-	{
-		auto FirstBlock = BlockMap[SelectedBlocks[0]];
-		auto FirstBlockIdent = FirstBlock->Identifier;
-		for (auto& Index : SelectedBlocks)
-		{
-			if (BlockMap[Index]->Identifier != FirstBlockIdent) return false;
-		}
-		return true;
-	}
-	return false;
-}
-
 void AGridController::DestroyBlocks(TArray<int32> &Selection)
 {
 	if (Selection.Num() > 2)
@@ -331,3 +329,18 @@ void AGridController::HighlightSelected()
 		}
 	}
 }
+
+//bool AGridController::bIsSameColor(TArray<int32> SelectedBlocks)
+//{
+//	if (SelectedBlocks.IsValidIndex(0))
+//	{
+//		auto FirstBlock = BlockMap[SelectedBlocks[0]];
+//		auto FirstBlockIdent = FirstBlock->Identifier;
+//		for (auto& Index : SelectedBlocks)
+//		{
+//			if (BlockMap[Index]->Identifier != FirstBlockIdent) return false;
+//		}
+//		return true;
+//	}
+//	return false;
+//}
