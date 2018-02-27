@@ -286,25 +286,38 @@ void AGridController::Select()
 		else
 		{
 			int32 LastElem = 0;
+			int32 SecondToLastElem = 0;
+
 			if (SelectedBlocks.IsValidIndex(SelectedBlocks.Num() - 1))
 			{
 				LastElem = SelectedBlocks[SelectedBlocks.Num() - 1];
 			}
+
+			if (SelectedBlocks.IsValidIndex(SelectedBlocks.Num() - 2))
+			{
+				SecondToLastElem = SelectedBlocks[SelectedBlocks.Num() - 2];
+			}
+
 			//is current element identical to the last?
 			if (LastElem != *BlockIndex)
 			{
-				//Current block already in array?
-				if (!SelectedBlocks.Contains(BlockIndex[0]))
+				//is current element identical to second to last? (going backwards)
+				if (SecondToLastElem != *BlockIndex)
 				{
-					//if first and new element have the same identifier (color)
-					if (BlockMap[SelectedBlocks[0]]->Identifier == BlockMap[BlockIndex[0]]->Identifier)
+					//Current block already in array?
+					if (!SelectedBlocks.Contains(BlockIndex[0]))
 					{
-						// adds index to Selected Blocks array
-						SelectedBlocks.Add(BlockIndex[0]);
+						//if first and new element have the same identifier (color)
+						if (BlockMap[SelectedBlocks[0]]->Identifier == BlockMap[BlockIndex[0]]->Identifier)
+						{
+							// adds index to Selected Blocks array
+							SelectedBlocks.Add(BlockIndex[0]);
+						}
+						else AbortTry();
 					}
 					else AbortTry();
 				}
-				else AbortTry();
+				else SelectedBlocks.Pop();
 			}
 		}
 	}
