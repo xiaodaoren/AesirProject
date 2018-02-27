@@ -239,7 +239,6 @@ void AGridController::Select()
 		if (SelectedBlocks.Num() == 0)
 		{
 			SelectedBlocks.Add(BlockIndex[0]);
-			UE_LOG(LogTemp, Warning, TEXT("Hit: %d"), BlockIndex[0])
 		}
 		else
 		{
@@ -256,7 +255,6 @@ void AGridController::Select()
 					if (BlockMap[SelectedBlocks[0]]->Identifier == BlockMap[BlockIndex[0]]->Identifier)
 					{
 						SelectedBlocks.Add(BlockIndex[0]);
-						UE_LOG(LogTemp, Warning, TEXT("Hit: %d"), BlockIndex[0])
 					}
 					else AbortTry();
 				}
@@ -274,7 +272,6 @@ void AGridController::DebugLog()
 
 void AGridController::AbortTry()
 {
-	//TODO light up
 	SelectedBlocks.Empty();
 	bSelectOnTick = false;
 }
@@ -331,7 +328,6 @@ void AGridController::HighlightSelected()
 		for (int i = 0; i < SelectedBlocks.Num()-1; i++)
 		{
 			DrawDebugLine(GetWorld(), BlockMap[SelectedBlocks[i]]->GetActorLocation(), BlockMap[SelectedBlocks[i+1]]->GetActorLocation(), FColor(255, 0, 0), false, -1.f, 0, 4.f);
-			DebugLog();
 		}
 	}
 }
