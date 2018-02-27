@@ -34,7 +34,7 @@ protected:
 	void DestroyBlocks(TArray<int32> &Selection);
 
 	//gets block position in 2d hexgrid from its index
-	FVector PositionFromIndex(int32 Index);
+	FVector2D PositionFromIndex(int32 Index);
 
 	void HighlightSelected();
 
@@ -63,7 +63,8 @@ private:
 	TMap<int32, ABlock*> BlockMap;
 	TArray<int32> SelectedBlocks;
 
-	int32 SetIdentifier();
+	//Identifier represents color
+	int32 RandIdentifier();
 
 	bool bOddNum;
 	bool bSelectOnTick = false;

@@ -49,8 +49,10 @@ void AGridController::InitGame()
 			//set different Z positions for even and odd numbered columns
 			if (CounterX % 2 == 0) bOddNum = false;
 			else bOddNum = true;
+
 			FVector HexPos;
 			FVector BlockPos;
+
 			for (int32 CounterY = 0; CounterY <= SizeY; CounterY++)
 			{
 				if (bOddNum)
@@ -71,9 +73,11 @@ void AGridController::InitGame()
 
 				//Spawn Blocks
 				ABlock *BlockInst = nullptr;
+
 				FTransform BlockTransform;
 				BlockTransform.SetLocation(BlockPos);
-				int32 Identifier = SetIdentifier();
+
+				int32 Identifier = RandIdentifier();
 				switch (Identifier)
 				{
 				case 0:
@@ -126,32 +130,41 @@ void AGridController::BindInput()
 void AGridController::DropAndRefill()
 {
 		//drop blocks
+		//iterate over all positions in grid
 		for (int i = 0; i < (SizeX + 1) * (SizeY + 1); i++)
 		{
+			//if current position has no block
 			if (!BlockMap.Contains(i))
 			{
 				bool bDrop = false;
+
+				//iterate over column (for all above positions of current block)
 				for (int j = i + 1; j % (SizeY + 1) != 0; j++)
 				{
+					//if there is a block, drop it
 					if (BlockMap.Contains(j))
 					{
 						auto BlockToDrop = BlockMap[j];
 						BlockMap.Remove(j);
 						BlockMap.Add(i, BlockToDrop);
 						bDrop = true;
-						BlockMap.Add(i, BlockToDrop);
-						j = -1;
+						j = -1; //will be 0 in next iteration to exit for loop
 					}
 				}
+
+				//if no block was dropped, spawn a new one
 				if (!bDrop)
 				{
 					ABlock* BlockInst = nullptr;
-					FVector Position = PositionFromIndex(i);
-					int32 CounterX = (int32)Position.X;
-					int32 CounterY = (int32)Position.Z;
 					FVector BlockPos;
+
+					FVector2D Position = PositionFromIndex(i);
+					int32 CounterX = (int32)Position.X;
+					int32 CounterY = (int32)Position.Y;
+
 					if (CounterX % 2 == 0) bOddNum = false;
 					else bOddNum = true;
+
 					if (bOddNum)
 					{
 						BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
@@ -163,7 +176,8 @@ void AGridController::DropAndRefill()
 
 					FTransform BlockTransform;
 					BlockTransform.SetLocation(BlockPos);
-					int32 Identifier = SetIdentifier();
+
+					int32 Identifier = RandIdentifier();
 					switch (Identifier)
 					{
 					case 0:
@@ -192,12 +206,15 @@ void AGridController::DropAndRefill()
 		//set blocks new position
 		for (auto& Block : BlockMap)
 		{
-			FVector Position = PositionFromIndex(Block.Key);
-			int32 CounterX = (int32)Position.X;
-			int32 CounterY = (int32)Position.Z;
 			FVector BlockPos;
+			
+			FVector2D Position = PositionFromIndex(Block.Key);
+			int32 CounterX = (int32)Position.X;
+			int32 CounterY = (int32)Position.Y;
+
 			if (CounterX % 2 == 0) bOddNum = false;
 			else bOddNum = true;
+
 			if (bOddNum)
 			{
 				BlockPos = FVector(float(CounterX * 35), 24.f, float(CounterY * 40 + 20));
@@ -212,7 +229,7 @@ void AGridController::DropAndRefill()
 }
 
 
-int32 AGridController::SetIdentifier()
+int32 AGridController::RandIdentifier()
 {
 	int32 Identifier = FMath::RandRange(0, 3);
 	return Identifier;
@@ -232,15 +249,20 @@ void AGridController::OnRelease()
 void AGridController::Select()
 {
 	auto PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+
 	FVector WorldPos;
 	FVector WorldDir;
 	PlayerController->DeprojectMousePositionToWorld(WorldPos, WorldDir);
+
+	//line trace checks for blocks at cursor position
 	FHitResult Hit;
 	FCollisionQueryParams TraceParams(FName(TEXT("")), false, this);
 	GetWorld()->LineTraceSingleByObjectType(Hit, WorldPos, WorldPos + WorldDir * 1000000000, FCollisionObjectQueryParams(ECollisionChannel::ECC_GameTraceChannel1), TraceParams);
 	DrawDebugLine(GetWorld(), WorldPos, Hit.Location, FColor(255, 0, 0), false, -1.f, 0, .2);
+
 	ABlock* BlockInst = nullptr;
 	const int32* BlockIndex = nullptr;
+
 	//gets Block that was hit 
 	if (Cast<ABlock>(Hit.GetActor())) 
 	{ 
@@ -248,25 +270,29 @@ void AGridController::Select()
 
 		//finds corresponding index in BlockMap
 		BlockIndex = BlockMap.FindKey(BlockInst); 
-		int32 LastElem = 0;
+
+		//if SelectedBlocks array is empty, add first index to it
 		if (SelectedBlocks.Num() == 0)
 		{
 			SelectedBlocks.Add(BlockIndex[0]);
 		}
 		else
 		{
+			int32 LastElem = 0;
 			if (SelectedBlocks.IsValidIndex(SelectedBlocks.Num() - 1))
 			{
 				LastElem = SelectedBlocks[SelectedBlocks.Num() - 1];
 			}
-			// adds index to Selected Blocks array
+			//is current element identical to the last?
 			if (LastElem != *BlockIndex)
 			{
+				//Current block already in array?
 				if (!SelectedBlocks.Contains(BlockIndex[0]))
 				{
 					//if first and new element have the same identifier (color)
 					if (BlockMap[SelectedBlocks[0]]->Identifier == BlockMap[BlockIndex[0]]->Identifier)
 					{
+						// adds index to Selected Blocks array
 						SelectedBlocks.Add(BlockIndex[0]);
 					}
 					else AbortTry();
@@ -312,11 +338,11 @@ void AGridController::DestroyBlocks(TArray<int32> &Selection)
 	DropAndRefill();
 }
 
-FVector AGridController::PositionFromIndex(int32 Index)
+FVector2D AGridController::PositionFromIndex(int32 Index)
 {
 	int32 PosX = Index / (SizeY + 1);
 	int32 PosY = Index % (SizeY + 1);
-	return FVector(PosX, 0.f, PosY);
+	return FVector2D(PosX, PosY);
 }
 
 void AGridController::HighlightSelected()
